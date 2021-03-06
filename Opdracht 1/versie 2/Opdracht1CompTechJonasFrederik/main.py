@@ -101,42 +101,48 @@ frequenciesIm = np.zeros(int(N/2+1))
 
 
 # # Time the sequential CPU function
-#@numba.jit
-print("Time for sequential")
-DFT_sequential(sig_sum, frequencies)
-t = synchronous_kernel_timeit( lambda: DFT_sequential(sig_sum, frequencies), number=10 )
-print(t)
-print()
+##@numba.jit #Adding this line doesn't work if you want to run sequential code on GPU.
+# print("Time for sequential")
+# DFT_sequential(sig_sum, frequencies)
+# t = synchronous_kernel_timeit( lambda: DFT_sequential(sig_sum, frequencies), number=10 )
+# print(t)
+# print()
 
+# # running parallel code in N threads on 1 block
 # print("Time for parallel")
 # DFT_parallel[1,N](sig_sum, frequenciesReal, frequenciesIm)
 # t_par = synchronous_kernel_timeit( lambda: DFT_parallel[1,N](sig_sum,frequenciesReal, frequenciesIm), number=10)
 # print( t_par )
 # print()
 
-# running parallel code in one thread on one block
-print("Time for parallel")
-DFT_parallel[1000,1](sig_sum, frequenciesReal, frequenciesIm)
-t_par = synchronous_kernel_timeit( lambda: DFT_parallel[1000,1](sig_sum,frequenciesReal, frequenciesIm), number=10)
-print( t_par )
-print()
+# # running parallel code in one thread on 1000 blocks
+# print("Time for parallel")
+# DFT_parallel[1000,1](sig_sum, frequenciesReal, frequenciesIm)
+# t_par = synchronous_kernel_timeit( lambda: DFT_parallel[1000,1](sig_sum,frequenciesReal, frequenciesIm), number=10)
+# print( t_par )
+# print()
 
+# # running parallel_easy code in N threads on one block
 # print("Time for parallel easy")
 # DFT_parallel_easy[1,frequencies_easy.shape[0]](sig_sum, frequencies_easy)
 # t_par_easy = synchronous_kernel_timeit( lambda: DFT_parallel_easy[1,frequencies_easy.shape[0]](sig_sum,frequencies_easy), number=10)
 # print( t_par_easy)
 
-# running parallel_easy code in one thread on one block
-print("Time for parallel easy")
-DFT_parallel_easy[1000,1](sig_sum, frequencies_easy)
-t_par_easy = synchronous_kernel_timeit( lambda: DFT_parallel_easy[1000,1](sig_sum,frequencies_easy), number=10)
-print( t_par_easy)
+# # running parallel_easy code in 1000 blocks on 1 thread
+# print("Time for parallel easy")
+# DFT_parallel_easy[1000,1](sig_sum, frequencies_easy)
+# t_par_easy = synchronous_kernel_timeit( lambda: DFT_parallel_easy[1000,1](sig_sum,frequencies_easy), number=10)
+# print( t_par_easy)
 
+# # running parallel_easy code in 1 thread on N blocks
 # DFT_parallel_easy[frequencies_easy.shape[0],1](sig_sum, frequencies_easy)
 # t_par_easy = synchronous_kernel_timeit( lambda: DFT_parallel_easy[frequencies_easy.shape[0],1](sig_sum,frequencies_easy), number=10)
 # print( t_par_easy)
-# --------------------------------------------------------------------------------
 
+
+
+# --------------------------------------------------------------------------------
+# # Run full DFT, N threads
 # # Reset the results and run the DFT (complex)
 # # Run the DFT on CPU (seq) -> frequencies1
 # frequencies1 = np.zeros(int(N/2+1), dtype=np.complex)
@@ -181,8 +187,51 @@ print( t_par_easy)
 
 
 
+# # --------------------------------------------------------------------------------
+# # Run single thread graphs
+# # Reset the results and run the DFT (complex)
+# # Run the DFT on CPU (seq) -> frequencies1
+# frequencies1 = np.zeros(int(N/2+1), dtype=np.complex)
+# DFT_sequential(sig_sum, frequencies1)
+#
+# # Reset 2 arrays (no complex numbers possible in cuda.atomic.add) for DFT_parallel GPU
+# frequenciesReal = np.zeros(int(N/2+1))
+# frequenciesIm = np.zeros(int(N/2+1))
+#
+# #frequencies2 = np.zeros(int(N/2+1), dtype=np.complex)
+# # Run DFT_parallel GPU -> frequenciesReal,frequenciesIm
+# DFT_parallel[1,25](sig_sum, frequenciesReal, frequenciesIm)
+#
+# # Reset array for frequencies_easy (complex)
+# frequencies_easy = np.zeros(int(N/2+1), dtype=np.complex)
+# # Run DFT_parallel_easy -> frequencies_easy
+# DFT_parallel_easy[1,25](sig_sum, frequencies_easy)
+#
+# # Plot to evaluate whether the results are as expected
+# fig1, (ax1_1, ax2_1) = plt.subplots(1, 2)
+# fig2, (ax1_2, ax2_2) = plt.subplots(1, 2)
+# fig3, (ax1_3, ax2_3) = plt.subplots(1, 2)
+# # Calculate the appropriate X-axis for the frequency components
+# xf = np.linspace(0, SAMPLING_RATE_HZ/2, int(N/2+1), endpoint=True)
+#
+# # Plot all of the signal components and their sum
+# for sig in sigs:
+#     ax1_1.plot( x, sig, lw=0.5, color='#333333', alpha=0.5 )
+#     ax1_2.plot(x, sig, lw=0.5, color='#333333', alpha=0.5)
+#     ax1_3.plot(x, sig, lw=0.5, color='#333333', alpha=0.5)
+# ax1_1.plot( x, sig_sum )
+# ax1_2.plot( x, sig_sum )
+# ax1_3.plot( x, sig_sum )
+#
+# # Plot the frequency components
+# ax2_1.plot( xf, abs(frequencies1), color='C3' ) # figure 1: CPU sequential
+# ax2_2.plot( xf, abs(frequenciesReal - frequenciesIm*1j), color='C3' ) # figure 2: GPU parallel hard
+# ax2_3.plot( xf, abs(frequencies_easy), color='C3' ) # figure 3: GPU parallel easy
+#
+# plt.show()
+
 # --------------------------------------------------------------------------------
-# Run single thread graphs
+# Run 25 threads graphs
 # Reset the results and run the DFT (complex)
 # Run the DFT on CPU (seq) -> frequencies1
 frequencies1 = np.zeros(int(N/2+1), dtype=np.complex)
@@ -194,12 +243,12 @@ frequenciesIm = np.zeros(int(N/2+1))
 
 #frequencies2 = np.zeros(int(N/2+1), dtype=np.complex)
 # Run DFT_parallel GPU -> frequenciesReal,frequenciesIm
-DFT_parallel[1,20](sig_sum, frequenciesReal, frequenciesIm)
+DFT_parallel[1,25](sig_sum, frequenciesReal, frequenciesIm)
 
 # Reset array for frequencies_easy (complex)
 frequencies_easy = np.zeros(int(N/2+1), dtype=np.complex)
 # Run DFT_parallel_easy -> frequencies_easy
-DFT_parallel_easy[1,20](sig_sum, frequencies_easy)
+DFT_parallel_easy[1,25](sig_sum, frequencies_easy)
 
 # Plot to evaluate whether the results are as expected
 fig1, (ax1_1, ax2_1) = plt.subplots(1, 2)
@@ -223,4 +272,3 @@ ax2_2.plot( xf, abs(frequenciesReal - frequenciesIm*1j), color='C3' ) # figure 2
 ax2_3.plot( xf, abs(frequencies_easy), color='C3' ) # figure 3: GPU parallel easy
 
 plt.show()
-
