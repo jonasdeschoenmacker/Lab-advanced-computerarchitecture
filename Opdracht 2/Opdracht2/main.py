@@ -136,7 +136,7 @@ def square_image_parallel_no_striding(px):
 
 # # --------------------------------------------------------------------------------------------------------------------
 # Overcome the problem using striding - one thread may process multiple pixels.
-square_image_parallel[(1, 1), (32, 32)](px_par)
+square_image_parallel[(1, 1), (1, 1)](px_par)
 plt.imshow(px_par)
 plt.show()
 
