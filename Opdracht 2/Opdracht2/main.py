@@ -11,23 +11,34 @@ from matplotlib import pyplot as plt # Plotting library
 from math import sin, cos, pi
 from Helpers import synchronous_kernel_timeit as sync_timeit
 
-
+# size of image
 size_of_i = 1024
 size_of_j = 1024
-T= 64
+# variables
+T = 64
 px = np.zeros((1024,1024))
 px_seq = np.zeros((1024,1024))
 px_par = np.zeros((1024,1024))
 px_par_no_striding = np.zeros((1024,1024))
 
+
 def square_image_seq(px):
+    ''' Image-generating kernel for 1024 px square images using the equation
+    sequential on CPU
+    :param px: array of pixels
+    :return: no return
+    '''
     for i in range(0,size_of_i):
         for j in range(0,size_of_j):
             px[i,j] = (sin((i*2*pi)/T)+1)*(sin((j*2*pi)/T)+1)*1/4
 
 @cuda.jit
 def square_image_parallel(px):
-    #T = 512
+    ''' Image-generating kernel for 1024 px square images using the equation
+    parallel on GPU using striding
+    :param px: array of pixels
+    :return: no return
+    '''
     # Calculate the thread's absolute position within the grid
     x = cuda.threadIdx.x + cuda.blockIdx.x * cuda.blockDim.x
     y = cuda.threadIdx.y + cuda.blockIdx.y * cuda.blockDim.y
@@ -42,33 +53,38 @@ def square_image_parallel(px):
 
 @cuda.jit
 def square_image_parallel_no_striding(px):
-    #T = 512
+    ''' Image-generating kernel for 1024 px square images using the equation
+    parallel on GPU without striding
+    :param px: array of pixels
+    :return: no return
+    '''
     # Calculate the thread's absolute position within the grid
     x = cuda.threadIdx.x + cuda.blockIdx.x * cuda.blockDim.x
     y = cuda.threadIdx.y + cuda.blockIdx.y * cuda.blockDim.y
-
-    # for i in range(x, size_of_i):
-    #     for j in range(y, size_of_j):
+    # Connect thread's absolute position within the grid with position within the array px
     i=x
     j=y
     px[i, j] = (sin((i * 2 * pi) / T) + 1) * (sin((j * 2 * pi) / T) + 1) * 1 / 4
 
-# square_image_parallel[(32,32), (32,32)](px)
-# t = sync_timeit( lambda: square_image_parallel[(32,32), (32,32)](px), number=10)
-# print(t)
-#
-# square_image_parallel_no_striding[256, 256](px)
-# t = sync_timeit( lambda: square_image_parallel_no_striding[1024, 1024](px), number=10)
-# print(t)
-#
-# square_image_seq()
-# # Plot the histogram and image
-# plt.imshow(px)
-# plt.show()
-#
-# square_image_parallel[(32,32),(32,32)](px)
-# plt.imshow(px)
-# plt.show()
+
+
+
+square_image_parallel[(32,32), (32,32)](px)
+t = sync_timeit( lambda: square_image_parallel[(32,32), (32,32)](px), number=10)
+print(t)
+
+square_image_parallel_no_striding[256, 256](px)
+t = sync_timeit( lambda: square_image_parallel_no_striding[1024, 1024](px), number=10)
+print(t)
+
+square_image_seq()
+# Plot the histogram and image
+plt.imshow(px)
+plt.show()
+
+square_image_parallel[(32,32),(32,32)](px)
+plt.imshow(px)
+plt.show()
 
 
 
@@ -126,18 +142,18 @@ execution_times = []
 
 
 
-t = sync_timeit(lambda: cuda.to_device(px_par))
-print(t)
-px_par_out_device = cuda.to_device(px_par)
-
-for i in range(200):
-    t = sync_timeit( lambda: square_image_parallel[(32, 32), (1, 1+i)](px_par_out_device), number=100)
-    execution_times.append(t)
-    print(f"{i+1}\n{t}")
-plt.plot( [(i+1) for i in range(len(execution_times))], execution_times )
-plt.grid(b=True,which='both')
-plt.yscale("log")
-plt.show()
+# t = sync_timeit(lambda: cuda.to_device(px_par))
+# print(t)
+# px_par_out_device = cuda.to_device(px_par)
+#
+# for i in range(200):
+#     t = sync_timeit( lambda: square_image_parallel[(32, 32), (1, 1+i)](px_par_out_device), number=100)
+#     execution_times.append(t)
+#     print(f"{i+1}\n{t}")
+# plt.plot( [(i+1) for i in range(len(execution_times))], execution_times )
+# plt.grid(b=True,which='both')
+# plt.yscale("log")
+# plt.show()
 
 # square_image_parallel[(1024, 1), (1, 1)](px_par)
 # for i in range(100):
