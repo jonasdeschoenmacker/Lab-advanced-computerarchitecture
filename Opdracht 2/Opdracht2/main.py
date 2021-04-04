@@ -107,12 +107,12 @@ def square_image_parallel_no_striding(px):
 # # dit geval werkt niet want er zal 1 dimensionaal gewerkrt worden, er zullen 256 maal 256 data punten
 # # berekend worden, dit is meer dan het aantal datapunten (1024 in 1 dimensie) die moeten berekend worden
 # # dit geeft een CUDA_UNKNOWN_ERROR
-# square_image_parallel_no_striding[256, 256](px_par_no_striding)
+# # square_image_parallel_no_striding[256, 256](px_par_no_striding)
 #
 # # Works but only 1 coulumn is caluclated
 # # hier zal de berekening wel lukken want 4 maal 256 = 1024 en dit past binnen 1 dimensie (1024)
 # # er zal dus maar 1 dimensie berekend worden, we zien dit op de afbeelding (sterk ingezoomd) want enkel de eerste kolom heeft waarden
-# square_image_parallel_no_striding[4, 256](px_par_no_striding)
+# # square_image_parallel_no_striding[4, 256](px_par_no_striding)
 #
 #
 #
@@ -121,24 +121,24 @@ def square_image_parallel_no_striding(px):
 # # om het totaal aantal pixels van bijvoorbeeld de x as (naar beneden) die berekend zullen worden
 # # moeten 32 en 8 vermeniguldigd worden dus 256 pixels in de x as
 # # A quarter of the image:
-# square_image_parallel_no_striding[(16,16),(32,32)](px_par_no_striding)
+# # square_image_parallel_no_striding[(16,16),(32,32)](px_par_no_striding)
 # # Other shapes
-# square_image_parallel_no_striding[(32,32),(8,16)](px_par_no_striding)
+# square_image_parallel_no_striding[(32,32),(16,32)](px_par_no_striding)
 #
 #
 #
 # # Complete image (all blocks)
 # # 1 thread per pixel dus dan zijn er 1024 op 1024 blocks nodig om het volledig beeld te maken
-# square_image_parallel_no_striding[(1024,1024),(1,1)](px_par_no_striding)
+# # square_image_parallel_no_striding[(1024,1024),(1,1)](px_par_no_striding)
 #
 # ax2.imshow(px_par_no_striding)
 # plt.show()
 
 # # --------------------------------------------------------------------------------------------------------------------
-# Overcome the problem using striding - one thread may process multiple pixels.
-square_image_parallel[(1, 1), (1, 1)](px_par)
-plt.imshow(px_par)
-plt.show()
+# # Overcome the problem using striding - one thread may process multiple pixels.
+# square_image_parallel[(1, 1), (1, 1)](px_par)
+# plt.imshow(px_par)
+# plt.show()
 
 
 # # --------------------------------------------------------------------------------------------------------------------
