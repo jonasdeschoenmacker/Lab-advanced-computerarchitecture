@@ -103,11 +103,11 @@ x = np.linspace(0,periods*2*np.pi,N)
 noise = np.random.normal(0,2*np.pi,x.size)
 # noise = 0
 # _sin = np.sin(x)+(0.01*noise)
-_sin = np.sin(x)+0.2*np.sin(25*x)
+_sin = np.sin(x)+0.2*np.sin(25*x)+(0.01*noise)
 
 #berekenen coefficienten en gefilterd signaal
-coeffs = _kz_coeffs(3,1)
-# coeffs = _kz_coeffs(21,3)
+# coeffs = _kz_coeffs(3,1)
+coeffs = _kz_coeffs(21,3)
 intermediate_result = np.zeros((coeffs.shape[0],_sin.shape[0]))
 # _calculate_intermediate_result[1,1024](int_result)
 # KZ_filter = _calculate_result(int_result)
@@ -118,6 +118,7 @@ result_dev = cuda.to_device(result)
 
 
 t = sync_timeit( lambda: _calculate_intermediate_result[1,1024](intermediate_result), number=10)
+print("Time to calculate intermediate result:")
 print(t)
 
 #timen berekenen gefilterd signaal zowel niet als wel met geheugen op GPU
@@ -131,6 +132,10 @@ int_result_dev = cuda.to_device(intermediate_result)
 stop = time.time()
 print("Time to pre-allocate memory:")
 print(stop - start)
+
+t = sync_timeit( lambda: _calculate_intermediate_result[1,1024](intermediate_result), number=10)
+print("Time to calculate intermediate result om GPU memory:")
+print(t)
 # t = sync_timeit( lambda: _calculate_result_parallel[(10,1),(100,1)](result,int_result), number=10)
 t = sync_timeit( lambda: _calculate_result_parallel[(10,1),(100,1)](result_dev,int_result_dev), number=10)
 print("Time to calculate result on GPU memory:")
@@ -155,8 +160,8 @@ fig.show()
 #berekenen DFT origineel en gefilterd signaal
 SAMPLING_RATE_HZ = 100
 
-frequencies_original = np.zeros(int(N/2+1), dtype=np.complex)
-frequencies_filtered = np.zeros(int(N/2+1), dtype=np.complex)
+frequencies_original = np.zeros(int(N/2+1), dtype=complex)
+frequencies_filtered = np.zeros(int(N/2+1), dtype=complex)
 
 # DFT_parallel[frequencies_original.shape[0],1](sin, frequencies_original)
 DFT_parallel[frequencies_filtered.shape[0],1](N, _sin, frequencies_original)
