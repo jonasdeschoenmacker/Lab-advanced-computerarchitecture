@@ -4,6 +4,7 @@ from numba import cuda
 from Helpers import synchronous_kernel_timeit as sync_timeit
 from math import sin, cos, pi
 import matplotlib.pyplot as plt
+import time
 
 def _kz_coeffs(m, k):
     """Calc KZ coefficients. Source https://github.com/Kismuz/kolmogorov-zurbenko-filter"""
@@ -41,6 +42,8 @@ def _calculate_intermediate_result(int_result):
     for i in range(x, _sin.shape[0], stride_x):
         for j in range(y, coeffs.size, stride_y):
             int_result[j,i] = coeffs[j]*_sin[i]
+
+
 
 @cuda.jit
 def _calculate_result_parallel(internal_result,int_result):
@@ -103,38 +106,40 @@ noise = np.random.normal(0,2*np.pi,x.size)
 _sin = np.sin(x)+0.2*np.sin(25*x)
 
 #berekenen coefficienten en gefilterd signaal
-# coeffs = _kz_coeffs(20,2)
-coeffs = _kz_coeffs(21,3)
-int_result = np.zeros((coeffs.shape[0],_sin.shape[0]))
-_calculate_intermediate_result[1,1024](int_result)
+coeffs = _kz_coeffs(3,1)
+# coeffs = _kz_coeffs(21,3)
+intermediate_result = np.zeros((coeffs.shape[0],_sin.shape[0]))
+# _calculate_intermediate_result[1,1024](int_result)
 # KZ_filter = _calculate_result(int_result)
-result = np.zeros(int_result.shape[1])
-_calculate_result_parallel[(10,1),(100,1)](result,int_result)
-# result_dev = cuda.to_device(result)
-# KZ_filter = _calculate_result_parallel[1,100](result,int_result)
+_calculate_intermediate_result[(10,1),(100,1)](intermediate_result)
+result = np.zeros(intermediate_result.shape[1])
+_calculate_result_parallel[(10,1),(100,1)](result,intermediate_result)
+result_dev = cuda.to_device(result)
 
-# t = sync_timeit( lambda: _calculate_intermediate_result[1,1024](int_result), number=10)
-# print(t)
+
+t = sync_timeit( lambda: _calculate_intermediate_result[1,1024](intermediate_result), number=10)
+print(t)
 
 #timen berekenen gefilterd signaal zowel niet als wel met geheugen op GPU
-# t = sync_timeit( lambda: _calculate_result(int_result), number=10)
-# print(t)
-t = sync_timeit( lambda: _calculate_result_parallel[(10,1),(100,1)](result,int_result), number=10)
-print("Calculate result:")
+t = sync_timeit( lambda: _calculate_result_parallel[(10,1),(100,1)](result,intermediate_result), number=10)
+print("Time to calculate result:")
 print(t)
 # result = np.zeros(int_result.shape[1])
+start = time.time()
 result_dev = cuda.to_device(result)
-int_result_dev = cuda.to_device(int_result)
+int_result_dev = cuda.to_device(intermediate_result)
+stop = time.time()
+print("Time to pre-allocate memory:")
+print(stop - start)
 # t = sync_timeit( lambda: _calculate_result_parallel[(10,1),(100,1)](result,int_result), number=10)
 t = sync_timeit( lambda: _calculate_result_parallel[(10,1),(100,1)](result_dev,int_result_dev), number=10)
-print("Calculate result on GPU memory:")
+print("Time to calculate result on GPU memory:")
 print(t)
 # _calculate_result_parallel[(10,1),(100,1)](result,int_result)
 
 #uitgang plotten
 fig = go.Figure()
 fig.add_traces(go.Scatter( x=x, y=_sin, name='Original Sin'))
-# fig.add_traces(go.Scatter( x=x, y=KZ_filter, name='KZ_filter'))
 fig.add_traces(go.Scatter( x=x, y=result, name='KZ_filter'))
 fig.show()
 

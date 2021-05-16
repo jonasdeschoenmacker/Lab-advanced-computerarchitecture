@@ -168,7 +168,7 @@ def square_image_parallel_no_striding(px):
 # plt.show()
 
 # # --------------------------------------------------------------------------------------------------------------------
-# # (optional) Insert the statement histogram_out_device = cuda.to_device(histogram_out)
+# # (optional) Insert the statement histogram_out_device = cuda.to_de   vice(histogram_out)
 # # before calling the kernel and this time pass it the histogram_out_device array.
 # # What happens and how is it manifested on the performance?
 #
