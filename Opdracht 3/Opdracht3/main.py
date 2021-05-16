@@ -116,16 +116,16 @@ result = np.zeros(intermediate_result.shape[1])
 _calculate_result_parallel[(10,1),(100,1)](result,intermediate_result)
 result_dev = cuda.to_device(result)
 
-
-t = sync_timeit( lambda: _calculate_intermediate_result[1,1024](intermediate_result), number=10)
-print("Time to calculate intermediate result:")
-print(t)
-
-#timen berekenen gefilterd signaal zowel niet als wel met geheugen op GPU
+#
+# t = sync_timeit( lambda: _calculate_intermediate_result[1,1024](intermediate_result), number=10)
+# print("Time to calculate intermediate result:")
+# print(t)
+#
+# #timen berekenen gefilterd signaal zowel niet als wel met geheugen op GPU
 t = sync_timeit( lambda: _calculate_result_parallel[(10,1),(100,1)](result,intermediate_result), number=10)
 print("Time to calculate result:")
 print(t)
-# result = np.zeros(int_result.shape[1])
+# result = np.zeros(intermediate_result.shape[1])
 start = time.time()
 result_dev = cuda.to_device(result)
 int_result_dev = cuda.to_device(intermediate_result)
@@ -148,14 +148,6 @@ fig.add_traces(go.Scatter( x=x, y=_sin, name='Original Sin'))
 fig.add_traces(go.Scatter( x=x, y=result, name='KZ_filter'))
 fig.show()
 
-# x_data = np.linspace(0, 2*np.pi, 100)
-# y_data_1 = np.sin(x_data)
-# y_data_2 = np.cos(x_data)
-#
-# fig = go.Figure()
-# fig.add_traces(go.Scatter( x=x_data, y=y_data_1, name='Sin'))
-# fig.add_traces(go.Scatter( x=x_data, y=y_data_2, name='Cos'))
-# fig.show()
 
 #berekenen DFT origineel en gefilterd signaal
 SAMPLING_RATE_HZ = 100
@@ -168,12 +160,17 @@ DFT_parallel[frequencies_filtered.shape[0],1](N, _sin, frequencies_original)
 # DFT_parallel[frequencies_filtered.shape[0],1](N,result, frequencies_filtered)
 # DFT_parallel[frequencies_filtered.shape[0],1](N,result_dev, frequencies_filtered)
 
-#timen DFT van origineel en gefilterd signaal
+#time DFT van origineel en gefilterd signaal
 t = sync_timeit( lambda: DFT_parallel[frequencies_filtered.shape[0],1](N,result, frequencies_filtered), number=10)
 print("Calculate DFT of result:")
 print(t)
-# t = sync_timeit( lambda: _calculate_result_parallel[(10,1),(100,1)](result,int_result), number=10)
+
+# Timing next line doesn't work for some reason...
+# start = time.time()
 frequencies_filtered_dev = cuda.to_device(frequencies_filtered)
+# stop = time.time()
+# print("Time to pre-allocate memory for DFT:")
+# print(stop - start)
 t = sync_timeit( lambda: DFT_parallel[frequencies_filtered.shape[0],1](N,result_dev, frequencies_filtered_dev), number=10)
 print("Calculate DFT of result_dev in GPU memory:")
 print(t)
@@ -196,19 +193,30 @@ ax1_1.plot( xf, abs(frequencies_original), color='C3' )
 ax1_2.plot( xf, abs(frequencies_filtered), color='#333333' )
 
 plt.show()
+# DFT_ZK_DFT
+# put everything on GPU memory
+_sin_dev = cuda.to_device(_sin)
+frequencies_original_dev = cuda.to_device(frequencies_original)
+frequencies_filtered_dev = cuda.to_device(frequencies_filtered)
+intermediate_result_dev = cuda.to_device(intermediate_result)
+result_dev = cuda.to_device(result)
+t = sync_timeit( lambda: DFT_parallel[frequencies_original.shape[0],1](N, _sin_dev, frequencies_original_dev), number=10)
+print("-------------------------------------")
+print("Calculate DFT of input in GPU memory:")
+print(t)
+t = sync_timeit( lambda: _calculate_intermediate_result[1,1024](intermediate_result), number=10)
+print("Time to calculate intermediate result on GPU memory:")
+print(t)
 
-# DFT_ZK_DFT = np.zeros(int(N/2+1), dtype=np.complex)
-#
-# _calculate_result_parallel[(10,1),(100,1)](DFT_ZK_DFT,abs(frequencies_filtered))
-#
-# fig1, (ax1_1, ax1_2) = plt.subplots(1, 2)
-#
-# # Plot the frequency components
-# ax1_1.plot( xf, abs(frequencies_filtered), color='C3' )
-# ax1_2.plot( xf, abs(DFT_ZK_DFT), color='#333333' )
+t = sync_timeit( lambda: _calculate_result_parallel[(10,1),(100,1)](result_dev,intermediate_result_dev), number=10)
+print("Time to calculate result on GPU memory:")
+print(t)
+t = sync_timeit( lambda: DFT_parallel[frequencies_filtered.shape[0],1](N, result_dev, frequencies_filtered_dev), number=10)
+print("Calculate DFT of output in GPU memory:")
+print(t)
+# plot the DFT of input and output
+# fig2, (ax1_1, ax1_2) = plt.subplots(1, 2)
+# ax1_1.plot( xf, abs(frequencies_original), color='C3' )
+# ax1_2.plot( xf, abs(frequencies_filtered), color='#333333' )
 #
 # plt.show()
-
-# TO DO
-#
-# DFT-ZK-DFT
