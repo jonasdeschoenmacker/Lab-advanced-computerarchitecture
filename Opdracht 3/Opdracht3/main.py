@@ -109,19 +109,17 @@ _sin = np.sin(x)+0.2*np.sin(25*x)+(0.01*noise)
 # coeffs = _kz_coeffs(3,1)
 coeffs = _kz_coeffs(21,3)
 intermediate_result = np.zeros((coeffs.shape[0],_sin.shape[0]))
-# _calculate_intermediate_result[1,1024](int_result)
-# KZ_filter = _calculate_result(int_result)
-_calculate_intermediate_result[(10,1),(100,1)](intermediate_result)
-result = np.zeros(intermediate_result.shape[1])
-_calculate_result_parallel[(10,1),(100,1)](result,intermediate_result)
-result_dev = cuda.to_device(result)
 
-#
-# t = sync_timeit( lambda: _calculate_intermediate_result[1,1024](intermediate_result), number=10)
-# print("Time to calculate intermediate result:")
-# print(t)
-#
-# #timen berekenen gefilterd signaal zowel niet als wel met geheugen op GPU
+# _calculate_intermediate_result[(10,1),(100,1)](intermediate_result)
+result = np.zeros(intermediate_result.shape[1])
+
+
+
+t = sync_timeit( lambda: _calculate_intermediate_result[1,1024](intermediate_result), number=10)
+print("Time to calculate intermediate result:")
+print(t)
+
+# #timong berekenen gefilterd signaal zowel niet als wel met geheugen op GPU
 t = sync_timeit( lambda: _calculate_result_parallel[(10,1),(100,1)](result,intermediate_result), number=10)
 print("Time to calculate result:")
 print(t)
@@ -133,14 +131,14 @@ stop = time.time()
 print("Time to pre-allocate memory:")
 print(stop - start)
 
-t = sync_timeit( lambda: _calculate_intermediate_result[1,1024](intermediate_result), number=10)
+t = sync_timeit( lambda: _calculate_intermediate_result[1,1024](int_result_dev), number=10)
 print("Time to calculate intermediate result om GPU memory:")
 print(t)
-# t = sync_timeit( lambda: _calculate_result_parallel[(10,1),(100,1)](result,int_result), number=10)
+
 t = sync_timeit( lambda: _calculate_result_parallel[(10,1),(100,1)](result_dev,int_result_dev), number=10)
 print("Time to calculate result on GPU memory:")
 print(t)
-# _calculate_result_parallel[(10,1),(100,1)](result,int_result)
+
 
 #uitgang plotten
 fig = go.Figure()
@@ -155,17 +153,16 @@ SAMPLING_RATE_HZ = 100
 frequencies_original = np.zeros(int(N/2+1), dtype=complex)
 frequencies_filtered = np.zeros(int(N/2+1), dtype=complex)
 
-# DFT_parallel[frequencies_original.shape[0],1](sin, frequencies_original)
+# Needed to plot input DFT
 DFT_parallel[frequencies_filtered.shape[0],1](N, _sin, frequencies_original)
-# DFT_parallel[frequencies_filtered.shape[0],1](N,result, frequencies_filtered)
-# DFT_parallel[frequencies_filtered.shape[0],1](N,result_dev, frequencies_filtered)
+
 
 #time DFT van origineel en gefilterd signaal
 t = sync_timeit( lambda: DFT_parallel[frequencies_filtered.shape[0],1](N,result, frequencies_filtered), number=10)
 print("Calculate DFT of result:")
 print(t)
 
-# Timing next line doesn't work for some reason...
+# Timing next line doesn't work because it is already in GPU memory
 # start = time.time()
 frequencies_filtered_dev = cuda.to_device(frequencies_filtered)
 # stop = time.time()
